@@ -87,7 +87,7 @@ def put_price(S, K, T, r, sigma):
     price: float or np.ndarray
         price of the European put option
 
-    Note: \phi(-x) = 1 - \phi(x) for the standard normal CDF,
+    Note: phi(-x) = 1 - phi(x) for the standard normal CDF,
      so we can use norm.cdf(-d1) and norm.cdf(-d2)
 
     """
