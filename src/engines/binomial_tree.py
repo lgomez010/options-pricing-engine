@@ -52,3 +52,9 @@ if __name__ == "__main__":
         price = price_option(S, K, T, r, sigma, N, "call", "european")
         print(f"N={N:>5}: {price:.6f}")
 print(f"BS:      10.450584")
+
+euro_put = price_option(S, K, T, r, sigma, 1000, "put", "european")
+amer_put = price_option(S, K, T, r, sigma, 1000, "put", "american")
+print(f"\nEuropean put: {euro_put:.4f}")
+print(f"American put: {amer_put:.4f}")
+print(f"Early exercise premium: {amer_put - euro_put:.4f}")
