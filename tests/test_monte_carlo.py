@@ -1,8 +1,10 @@
 import numpy as np
 from src.models.black_scholes import call_price
+from src.models.black_scholes import call_delta, vega
 from src.models.gbm import GBMModel
 from src.payoffs.european import EuropeanCallPayoff
 from src.engines.monte_carlo import MonteCarloEngine
+
 
 def test_mc_converges_to_bs():
     """Test that Monte Carlo price converges to Black_scholes price as n_paths increases"""
@@ -72,4 +74,21 @@ def test_convergence_rate():
 
     assert abs(ratio - expected_ratio) < 0.1 * expected_ratio
 
-    
+def test_pathwise_greeks():
+    """Test that pathwise sensitivty matches analytical delta and vega"""
+
+    S, K, T, r, sigma = 100, 100, 1.0, 0.05, 0.2
+    np.random.seed(37)
+
+    #analytical values from Black-Scholes
+    delta_analytical = call_delta(S, K, T, r, sigma)
+    vega_analytical = vega(S, K, T, r, sigma)
+
+    # MC pathwise estimates from the engine
+    model = GBMModel(S, r, sigma, T)
+    payoff = EuropeanCallPayoff(K)
+    engine = MonteCarloEngine(model, payoff, r, T)
+    result = engine.price(n_paths = 100_000, greeks = ["delta", "vega"])
+
+    assert np.isclose(result["delta"], delta_analytical, rtol = 1e-2)
+    assert np.isclose(result["vega"], vega_analytical, rtol = 1e-2)

@@ -25,3 +25,13 @@ class GBMModel:
     # the control variate is the terminal stock price, which has known expectation
     def control_variate_mean(self) -> float:
         return self.S0 * np.exp(self.r * self.T)
+
+    def pathwise_sensitivity(self, S_T: np.ndarray, Z: np.ndarray, greek: str) -> np.ndarray:
+        # compute dS/dsigma for each path
+        if greek == "delta":
+            return S_T / self.S0
+        elif greek == "vega":
+            return S_T * (-self.sigma * self.T + np.sqrt(self.T) * Z)
+        else:
+            raise ValueError(f"Unknown greek: {greek}")
+    

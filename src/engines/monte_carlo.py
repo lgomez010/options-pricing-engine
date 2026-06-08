@@ -13,7 +13,8 @@ class MonteCarloEngine:
     
     def price(self, n_paths: int, n_steps: int = 1,
               antithetic: bool = False,
-              control_variate: bool = False) -> dict:
+              control_variate: bool = False,
+              greeks = None) -> dict:
 
         #1. ask model what shape of randomness it needs
         shape = self.model.random_shape(n_paths, n_steps)
@@ -27,14 +28,26 @@ class MonteCarloEngine:
         #4. evaluate payoffs
         payoffs = self.payoff(paths)
 
-        #5. if antithetic, also simulate with -Z and average
+        #5. pathwise Greeks (before antithetic/CV modify paths)
+        if greeks is not None:
+            sensitivities = {}
+            for greek in greeks:
+                pathwise = self.model.pathwise_sensitivity(paths, Z, greek)
+                indicator = self.payoff.payoff_derivative(paths)
+                greek_value = np.exp(-self.r * self.T) * np.mean(indicator * pathwise)
+                sensitivities[greek] = greek_value
+        else:
+            sensitivities = {}
+
+
+        #6. if antithetic, also simulate with -Z and average
         if antithetic:
             paths_anti = self.model.simulate(-Z)
             payoffs_anti = self.payoff(paths_anti)
             payoffs = 0.5 * (payoffs + payoffs_anti)
             paths = 0.5 * (paths + paths_anti) #keep paths consistent for control variate
 
-        #6. control variate correction
+        #7. control variate correction
         if control_variate:
             control_mean = self.model.control_variate_mean()
             terminal_values = paths # control variate is terminal stock price
@@ -45,8 +58,10 @@ class MonteCarloEngine:
                 payoffs -= beta * (terminal_values - control_mean)
 
 
-        #7. discount and average
+        #8. discount and average
         price = np.exp(-self.r * self.T) * np.mean(payoffs)
         stderr = np.exp(-self.r * self.T) * np.std(payoffs) / np.sqrt(n_paths)
 
-        return {"price": price, "std_error": stderr}
+        result = {"price": price, "std_error": stderr}
+        result.update(sensitivities)
+        return result
