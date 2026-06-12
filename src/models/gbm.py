@@ -35,3 +35,6 @@ class GBMModel:
         else:
             raise ValueError(f"Unknown greek: {greek}")
     
+    def pde_coefficients(self, S: float, t: float) -> tuple[float, float]:
+        """ Return (r, sigma) for PDE pricing"""
+        return self.r, self.sigma
