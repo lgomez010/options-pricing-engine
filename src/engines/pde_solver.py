@@ -107,6 +107,9 @@ class PDESolver:
         self._build_operator()
         self._set_terminal_condition()
 
+        boundary_prices = []
+        boundary_times = []
+
 
         #step backward from expiry to today
         for n in range(self.n_time, 0, -1):
@@ -116,7 +119,18 @@ class PDESolver:
             # American: take max of continuation and exercise
             if american:
                 exercise = self.payoff(self.S)
+
+                # find exercise boundary
+                diff = self.u - exercise 
+                idx = np.argmax(diff > 0)
+                if idx > 0:
+                    boundary_prices.append(self.S[idx])
+                    boundary_times.append(t)
+
+
                 self.u = np.maximum(self.u, exercise)
+        self.exercise_boundary = np.array(boundary_prices)
+        self.boundary_times = np.array(boundary_times)
 
         # interpolate to get price at exact S0
         x0 = np.log(S0)
