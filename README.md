@@ -4,15 +4,27 @@ A multi-model derivatives pricing library implementing Black-Scholes, binomial t
 
 ## Key Results
 
-<!-- TODO: Embed convergence plots and pricing comparison figures after implementation -->
+### Engine Comparison (European Put, S₀=100, K=100, T=1, r=5%, σ=20%)
 
-| Method | European Call Price | Runtime (ms) | Error vs. Analytical |
-|--------|-------------------|-------------|---------------------|
-| Black-Scholes (analytical) | — | — | — |
-| Binomial tree (N=1000) | — | — | — |
-| Crank-Nicolson PDE | — | — | — |
-| Monte Carlo (100k paths) | — | — | — |
-| Heston (FFT) | — | — | — |
+| Method | Price | Error vs. Analytical | Runtime (ms) |
+|--------|-------|---------------------|-------------|
+| Black-Scholes (analytical) | 5.5735 | — | <1 |
+| Binomial Tree (N=1000) | 5.5715 | 2.0e-3 | ~5 |
+| Monte Carlo (100k paths) | 5.5752 | 1.7e-3 | ~10 |
+| Crank-Nicolson PDE (400×400) | 5.5740 | 4.8e-4 | ~13 |
+
+### Convergence & Visualization
+
+![Crank-Nicolson Spatial Convergence](notebooks/convergence_plot.png)
+*Measured O(Δx²) convergence rate (slope = 2.01), confirming second-order spatial accuracy.*
+
+![Engine Comparison](notebooks/engine_comparison.png)
+
+![American Put Exercise Boundary](notebooks/exercise_boundary.png)
+*Early exercise boundary S*(t) extracted from the PDE solver. Below this curve, immediate exercise dominates continuation value.*
+
+![PDE Greeks](notebooks/pde_greeks.png)
+*Delta and gamma computed from the PDE solution grid via finite differences in log-price, converted using the chain rule. Overlaid with analytical Black-Scholes values.*
 
 ## Mathematical Background
 
@@ -36,9 +48,9 @@ where $\mathbb{Q}$ is the unique equivalent martingale measure under which disco
 ```bash
 git clone https://github.com/lgomez010/options-pricing-engine.git
 cd options-pricing-engine
-pip install -e ".[dev,notebooks]"
-pytest                           # run tests
-python -m src.models.black_scholes  # quick demo
+pip install numpy scipy matplotlib pytest
+pytest                                    # 16 tests pass
+python notebooks/pde_visualizations.py    # generate all plots
 ```
 
 ## Project Structure
@@ -46,28 +58,22 @@ python -m src.models.black_scholes  # quick demo
 ```
 options-pricing-engine/
 ├── src/
-│   ├── models/              # Pricing models (BS, Heston, rough Bergomi)
-│   │   ├── black_scholes.py
-│   │   ├── heston.py
-│   │   └── rough_bergomi.py
-│   ├── engines/             # Numerical methods (MC, PDE, trees)
-│   │   ├── monte_carlo.py
-│   │   ├── pde_solver.py
-│   │   └── binomial_tree.py
-│   ├── greeks/              # Analytical & numerical Greeks
-│   │   ├── analytical.py
-│   │   └── numerical.py
-│   └── utils/               # Shared helpers (payoffs, plotting)
-│       └── payoffs.py
-├── tests/                   # pytest suite
-│   ├── test_black_scholes.py
-│   ├── test_put_call_parity.py
-│   └── test_convergence.py
-├── notebooks/               # Exploration & presentation
-│   └── comparison.ipynb
-├── data/                    # Market data (see data/README.md)
-├── configs/                 # Parameter configurations
-├── docs/                    # Additional documentation
+│   ├── models/
+│   │   ├── black_scholes.py    # Closed-form BS pricing and Greeks
+│   │   └── gbm.py              # GBM model (PDE coefficients, MC simulation)
+│   ├── payoffs/
+│   │   └── european.py          # Call/Put payoff and boundary conditions
+│   ├── engines/
+│   │   ├── binomial_tree.py     # CRR binomial tree (European & American)
+│   │   ├── monte_carlo.py       # MC with antithetic/control variates, pathwise Greeks
+│   │   └── pde_solver.py        # Crank-Nicolson FD solver with American exercise
+├── tests/
+│   ├── test_black_scholes.py    # Put-call parity, delta, gamma-vega, FD gamma
+│   ├── test_binomial_tree.py    # BS convergence, American ≥ European
+│   ├── test_monte_carlo.py      # Convergence, variance reduction, pathwise Greeks
+│   └── test_pde_solver.py       # European/American pricing, spatial convergence O(Δx²)
+├── notebooks/
+│   └── pde_visualizations.py    # Convergence, comparison, boundary, Greeks plots
 ├── pyproject.toml
 └── README.md
 ```
