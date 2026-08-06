@@ -37,11 +37,21 @@ where $\mathbb{Q}$ is the unique equivalent martingale measure under which disco
 
 ### Models Implemented
 - **Black-Scholes**: Constant volatility; analytical solution via the heat equation.
-- **Binomial trees (CRR)**: Discrete-time approximation converging to Black-Scholes in the continuum limit.
+- **Binomial trees (CRR)**: Discrete-time approximation converging to Black-Scholes 
 - **Finite differences (Crank-Nicolson)**: Direct numerical solution of the Black-Scholes PDE; handles American exercise via penalty method.
 - **Monte Carlo**: Simulation of the risk-neutral SDE with variance reduction (antithetic variates, control variates).
-- **Heston**: Stochastic volatility with mean-reverting variance process; priced via characteristic function and Fourier inversion.
+- **Heston**: Stochastic volatility with a mean-reverting CIR variance process correlated to the price. Priced by Gil–Pelaez inversion of the characteristic function in the stable \varphi_2​ form of Albrecher et al. (2007), which avoids the branch discontinuities that make the original Heston (1993) formulation numerically fragile at long maturities.
 - **Rough Bergomi**: Fractional volatility driven by fractional Brownian motion with $H < \tfrac{1}{2}$; priced via Monte Carlo.
+
+## Validation
+ 
+The Heston implementation is validated by a 53-test suite in `tests/test_heston.py`, organized so that each group isolates a distinct failure mode:
+ 
+1. **Construction (9 tests).** Parameter constraints enforced at `__post_init__`; the Feller condition $2\kappa\theta < \sigma_v^2$ is checked and warned on, not enforced, since violating it is a legitimate modelling choice.
+2. **Characteristic function identities (16 tests).** The two identities $\varphi(0, T) = 1$ and $\varphi(-i, T) = S_0 e^{rT}$ hold by definition — the first because probability measures integrate to one, the second because $S_t e^{-rt}$ is a $\mathbb{Q}$-martingale. Tested both at the special points (short-circuit branches) and via the general Gatheral (2006, Eq. 2.12) formula.
+3. **Benchmark prices (4 tests).** ATM call prices at $K = 100$, $T \in \{1, 2, 5, 10\}$ match Albrecher et al. (2007), Table 2, to within one cent, on the DAX-calibrated parameter set $(v_0, \kappa, \theta, \sigma_v, \rho) = (0.0175, 1.5768, 0.0398, 0.5751, -0.5711)$.
+4. **Put–call parity (12 tests).** $C - P = S_0 - Ke^{-rT}$ tested across three moneynesses and four maturities. The put is priced independently by Gil–Pelaez rather than by rearranging parity, so this is a genuine cross-check.
+5. **Black–Scholes limit (12 tests).** Setting $\sigma_v \to 0$, $\theta = v_0$, $\rho = 0$ reduces Heston to Black–Scholes with constant volatility $\sqrt{v_0}$; the two pricers agree to `abs=1e-3` across the surface.
 
 ## Quickstart
 
@@ -49,7 +59,7 @@ where $\mathbb{Q}$ is the unique equivalent martingale measure under which disco
 git clone https://github.com/lgomez010/options-pricing-engine.git
 cd options-pricing-engine
 pip install numpy scipy matplotlib pytest
-pytest                                    # 16 tests pass
+pytest                                    
 python notebooks/pde_visualizations.py    # generate all plots
 ```
 
@@ -92,6 +102,13 @@ options-pricing-engine/
 
 ### Connection to broader portfolio
 This engine provides the pricing foundation for the [`volatility-surface-lab`](https://github.com/lgomez010/volatility-surface-lab) project, where these models are calibrated to market-observed implied volatility surfaces.
+
+## References
+ 
+- Gatheral, J. (2006). *The Volatility Surface: A Practitioner's Guide*. Wiley. Ch. 2.
+- Albrecher, H., Mayer, P., Schoutens, W., & Tistaert, J. (2007). "The Little Heston Trap." *Wilmott Magazine*, 83–92.
+- Heston, S. L. (1993). "A closed-form solution for options with stochastic volatility with applications to bond and currency options." *Review of Financial Studies*, 6(2), 327–343.
+
 
 ## License
 
