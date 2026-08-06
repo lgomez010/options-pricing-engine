@@ -60,3 +60,31 @@ def test_american_call_equals_european():
     amer = PDESolver(model, payoff).price(S0, T, american=True)
 
     assert abs(amer - euro) < 0.01, f"American {amer:.4f} vs European {euro:.4f}"
+
+def test_crank_nicolson_spatial_convergence():
+    """error shrinks as O(dx^2)"""
+
+    # parameters
+    S0, K, T, r, sigma = 100.0, 100.0, 1.0, 0.05, 0.2
+    bs = put_price(S0, K, T, r, sigma)
+
+    # resolution loop
+    n_space_values = [50, 100, 200, 400, 800]
+    dxs = []
+    errors = []
+
+    model = GBMModel(S0, r, sigma, T)
+    payoff = EuropeanPutPayoff(K, T)
+
+    for n_space in n_space_values:
+        solver = PDESolver(model, payoff, n_space=n_space, n_time=5000)
+        pde = solver.price(S0, T)
+        dxs.append(solver.dx)
+        errors.append(abs(pde - bs))
+
+    # fit loglog slope
+    log_dx = np.log(dxs)
+    log_err = np.log(errors)
+    slope, _ = np.polyfit(log_dx, log_err, 1)
+
+    assert 1.8 <= slope <= 2.2, f"Expected slope ~ 2, got {slope:.2f}"
