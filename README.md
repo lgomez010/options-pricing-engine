@@ -1,5 +1,7 @@
 # Options Pricing Engine
 
+[![tests](https://github.com/lgomez010/options-pricing-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/lgomez010/options-pricing-engine/actions/workflows/tests.yml)
+
 A multi-model derivatives pricing library implementing Black-Scholes closed-form, CRR binomial trees, Crank-Nicolson PDE, Monte Carlo, and Heston stochastic volatility (Gil-Pelaez inversion). Built to compare analytical, numerical, and simulation-based approaches on equal footing, with rigorous convergence analysis and cross-method validation.
 
 ## Key Results
