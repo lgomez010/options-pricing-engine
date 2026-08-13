@@ -1,11 +1,11 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "options-pricing-engine"
 version = "0.1.0"
-description = "Multi-model options pricing engine: Black-Scholes, binomial trees, PDE, Monte Carlo, Heston, and rough Bergomi"
+description = "Multi-model options pricing engine: Black-Scholes closed-form, CRR binomial trees, Crank-Nicolson PDE, Monte Carlo, and Heston stochastic volatility (Gil-Pelaez). Convergence analysis and cross-method validation."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
